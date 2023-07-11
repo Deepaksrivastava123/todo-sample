@@ -30,7 +30,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AddNewTask  extends BottomSheetDialogFragment {
+public class AddNewTask extends BottomSheetDialogFragment {
 
     public static final String TAG = "AddNewTask";
 
@@ -43,14 +43,14 @@ public class AddNewTask  extends BottomSheetDialogFragment {
     private String id = "";
     private String dueDateUpdate = "";
 
-    public static AddNewTask newInstance(){
+    public static AddNewTask newInstance() {
         return new AddNewTask();
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.add_new_task , container , false);
+        return inflater.inflate(R.layout.add_new_task, container, false);
 
     }
 
@@ -67,7 +67,7 @@ public class AddNewTask  extends BottomSheetDialogFragment {
         boolean isUpdate = false;
 
         final Bundle bundle = getArguments();
-        if (bundle != null){
+        if (bundle != null) {
             isUpdate = true;
             String task = bundle.getString("task");
             id = bundle.getString("id");
@@ -76,7 +76,7 @@ public class AddNewTask  extends BottomSheetDialogFragment {
             mTaskEdit.setText(task);
 
 
-            if (task.length() > 0){
+            if (task.length() > 0) {
                 mSaveBtn.setEnabled(false);
                 mSaveBtn.setBackgroundColor(Color.GRAY);
             }
@@ -90,13 +90,13 @@ public class AddNewTask  extends BottomSheetDialogFragment {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-               if (s.toString().equals("")){
-                   mSaveBtn.setEnabled(false);
-                   mSaveBtn.setBackgroundColor(Color.GRAY);
-               }else{
-                   mSaveBtn.setEnabled(true);
-                   mSaveBtn.setBackgroundColor(getResources().getColor(R.color.green_blue));
-               }
+                if (s.toString().equals("")) {
+                    mSaveBtn.setEnabled(false);
+                    mSaveBtn.setBackgroundColor(Color.GRAY);
+                } else {
+                    mSaveBtn.setEnabled(true);
+                    mSaveBtn.setBackgroundColor(getResources().getColor(R.color.green_blue));
+                }
             }
 
             @Override
@@ -106,7 +106,6 @@ public class AddNewTask  extends BottomSheetDialogFragment {
         });
 
 
-
         boolean finalIsUpdate = isUpdate;
         mSaveBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -114,12 +113,11 @@ public class AddNewTask  extends BottomSheetDialogFragment {
 
                 String task = mTaskEdit.getText().toString();
 
-                if (finalIsUpdate){
-                    firestore.collection("task").document(id).update("task" , task , "due" , dueDate);
+                if (finalIsUpdate) {
+                    firestore.collection("task").document(id).update("task", task, "due", dueDate);
                     Toast.makeText(context, "Task Updated", Toast.LENGTH_SHORT).show();
 
-                }
-                else {
+                } else {
                     if (task.isEmpty()) {
                         Toast.makeText(context, "Empty task not Allowed !!", Toast.LENGTH_SHORT).show();
                     } else {
@@ -165,8 +163,8 @@ public class AddNewTask  extends BottomSheetDialogFragment {
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
         Activity activity = getActivity();
-        if (activity instanceof OnDialogCloseListner){
-            ((OnDialogCloseListner)activity).onDialogClose(dialog);
+        if (activity instanceof OnDialogCloseListner) {
+            ((OnDialogCloseListner) activity).onDialogClose(dialog);
         }
     }
 }
