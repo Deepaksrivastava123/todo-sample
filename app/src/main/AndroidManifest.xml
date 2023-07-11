@@ -27,6 +27,9 @@
         android:theme="@style/Theme.Todosample"
         tools:targetApi="31">
         <activity
+            android:name=".screen.AddDescriptionActivity"
+            android:exported="true"/>
+        <activity
             android:name=".screen.SplashActivity"
             android:exported="true">
 

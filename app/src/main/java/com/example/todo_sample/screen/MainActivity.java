@@ -55,9 +55,12 @@ public class MainActivity extends AppCompatActivity implements OnDialogCloseList
     private List<ToDoModel> mList;
     private Query query;
 
-
+    private String id;
     private ListenerRegistration listenerRegistration;
 
+    private final int PICK_IMAGE_REQUEST = 22;
+
+    private Uri filePath;
 
     StorageReference storageReference;
     FirebaseStorage storage;
@@ -85,7 +88,13 @@ public class MainActivity extends AppCompatActivity implements OnDialogCloseList
         });
 
         mList = new ArrayList<>();
-        adapter = new ToDoAdapter(MainActivity.this, mList);
+        adapter = new ToDoAdapter(MainActivity.this, mList, new ToDoAdapter.TodoAdapterCallback() {
+            @Override
+            public void saveImage(String taskId) {
+                id = taskId;
+                selectImage();
+            }
+        });
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new TouchHelper(adapter));
         itemTouchHelper.attachToRecyclerView(recyclerView);
@@ -93,6 +102,106 @@ public class MainActivity extends AppCompatActivity implements OnDialogCloseList
         recyclerView.setAdapter(adapter);
     }
 
+    private void browseAndUploadImageToFirebase(String taskId) {
+
+
+    }
+
+    private void selectImage() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(
+                Intent.createChooser(
+                        intent,
+                        "Select Image from here..."),
+                PICK_IMAGE_REQUEST);
+    }
+
+    private void uploadImage() {
+        if (filePath != null) {
+
+            // Code for showing progressDialog while uploading
+            ProgressDialog progressDialog
+                    = new ProgressDialog(this);
+            progressDialog.setTitle("Uploading...");
+            progressDialog.show();
+
+            // Defining the child of storageReference
+            StorageReference ref
+                    = storageReference
+                    .child(
+                            "images/"
+                                    + UUID.randomUUID().toString());
+
+            // adding listeners on upload
+            // or failure of image
+            ref.putFile(filePath)
+                    .addOnSuccessListener(
+                            new OnSuccessListener<UploadTask.TaskSnapshot>() {
+
+                                @Override
+                                public void onSuccess(
+                                        UploadTask.TaskSnapshot taskSnapshot) {
+
+                                    // Image uploaded successfully
+                                    // Dismiss dialog
+                                    progressDialog.dismiss();
+
+                                    Toast
+                                            .makeText(MainActivity.this,
+                                                    "Image Uploaded!!",
+                                                    Toast.LENGTH_SHORT)
+                                            .show();
+                                    taskSnapshot.getStorage().getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<Uri> task) {
+                                            String fileLink = task.getResult().toString();
+                                            firestore.collection("task").document(id).update("url", fileLink);
+                                            Log.d("path", fileLink);
+                                            mList.clear();
+                                            showData();
+
+                                        }
+                                    });
+
+
+                                }
+                            })
+
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+
+                            // Error, Image not uploaded
+                            progressDialog.dismiss();
+                            Toast
+                                    .makeText(MainActivity
+                                                    .this,
+                                            "Failed " + e.getMessage(),
+                                            Toast.LENGTH_SHORT)
+                                    .show();
+                        }
+                    })
+                    .addOnProgressListener(
+                            new OnProgressListener<UploadTask.TaskSnapshot>() {
+
+                                // Progress Listener for loading
+                                // percentage on the dialog box
+                                @Override
+                                public void onProgress(
+                                        UploadTask.TaskSnapshot taskSnapshot) {
+                                    double progress
+                                            = (100.0
+                                            * taskSnapshot.getBytesTransferred()
+                                            / taskSnapshot.getTotalByteCount());
+                                    progressDialog.setMessage(
+                                            "Uploaded "
+                                                    + (int) progress + "%");
+                                }
+                            });
+        }
+    }
 
     private void showData() {
         query = firestore.collection("task").orderBy("time", Query.Direction.DESCENDING);
@@ -114,7 +223,6 @@ public class MainActivity extends AppCompatActivity implements OnDialogCloseList
                             toDoModel.setDue(documentChange.getDocument().get("due").toString());
                             toDoModel.setStatus(Integer.parseInt(documentChange.getDocument().get("status").toString()));
                             toDoModel.setUrl(documentChange.getDocument().get("url").toString());
-                            // ToDoModel toDoModel = documentChange.getDocument().toObject(ToDoModel.class).withId(id);
                             mList.add(toDoModel);
                             adapter.notifyDataSetChanged();
                         }
@@ -131,6 +239,44 @@ public class MainActivity extends AppCompatActivity implements OnDialogCloseList
         mList.clear();
         showData();
         adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode,
+                                    int resultCode,
+                                    Intent data) {
+
+        super.onActivityResult(requestCode,
+                resultCode,
+                data);
+
+        // checking request code and result code
+        // if request code is PICK_IMAGE_REQUEST and
+        // resultCode is RESULT_OK
+        // then set image in the image view
+        if (requestCode == PICK_IMAGE_REQUEST
+                && resultCode == RESULT_OK
+                && data != null
+                && data.getData() != null) {
+
+            // Get the Uri of data
+            filePath = data.getData();
+            try {
+
+                // Setting image on image view using Bitmap
+                Bitmap bitmap = MediaStore
+                        .Images
+                        .Media
+                        .getBitmap(
+                                getContentResolver(),
+                                filePath);
+                uploadImage();
+                //  imageView.setImageBitmap(bitmap);
+            } catch (IOException e) {
+                // Log the exception
+                e.printStackTrace();
+            }
+        }
     }
 
 
